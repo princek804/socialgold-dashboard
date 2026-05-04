@@ -1,1188 +1,905 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Social Gold — Pinterest Team Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ===== RESET & BASE ===== */
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+html,body{height:100%;font-family:'Segoe UI',sans-serif;font-size:14px}
 body{background:#0F0D0A;color:#F0E8D8;overflow:hidden}
-
-/* ===== CSS VARIABLES ===== */
 :root{
-  --gold:#E8A020;--gold-l:#FAC75A;--gold-d:#A06810;
-  --dark:#0F0D0A;--surface:#1A1510;--card:#231E16;--card2:#2A2218;
-  --border:rgba(232,160,32,0.16);--border2:rgba(232,160,32,0.28);
-  --text:#F0E8D8;--muted:#9A8468;--muted2:#C4A878;
+  --gold:#E8A020;--gold-l:#FAC75A;
+  --dark:#0F0D0A;--surface:#1A1510;--card:#231E16;
+  --border:rgba(232,160,32,0.16);
+  --text:#F0E8D8;--muted:#9A8468;
   --pin:#E60023;--green:#22C55E;--blue:#3B8BF0;--red:#E05050;
-  --success-bg:rgba(34,197,94,0.12);--success-border:rgba(34,197,94,0.3);
-  --danger-bg:rgba(230,0,35,0.12);--danger-border:rgba(230,0,35,0.3);
 }
-
-/* ===== LAYOUT ===== */
 #app{display:flex;height:100vh}
-#sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:10}
+#sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-
-/* ===== SIDEBAR ===== */
 .logo-area{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
-.pin-badge{display:inline-block;background:var(--pin);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.08em;margin-bottom:5px}
-.logo-name{font-size:16px;font-weight:700;color:var(--gold);letter-spacing:.02em}
-.logo-domain{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.06em}
-
+.pin-badge{display:inline-block;background:var(--pin);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;margin-bottom:5px}
+.logo-name{font-size:16px;font-weight:700;color:var(--gold)}
+.logo-domain{font-size:10px;color:var(--muted);margin-top:2px}
 .nav{flex:1;padding:10px 0;overflow-y:auto}
-.nav::-webkit-scrollbar{width:3px}
-.nav::-webkit-scrollbar-thumb{background:var(--border)}
 .nav-section{padding:10px 16px 4px;font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:12px;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none}
 .nav-item:hover{color:var(--gold-l);background:rgba(232,160,32,.05)}
 .nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(232,160,32,.08)}
-.nav-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}
-.nav-count{margin-left:auto;background:var(--gold);color:var(--dark);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px}
-
+.nav-icon{width:16px;text-align:center;flex-shrink:0}
 .sidebar-bottom{padding:12px 16px;border-top:1px solid var(--border)}
-.user-info{display:flex;align-items:center;gap:10px}
-.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--pin));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.user-name{font-size:12px;color:var(--text);font-weight:500}
-.user-role{font-size:9px;color:var(--gold);background:rgba(232,160,32,.12);border:1px solid var(--border);padding:1px 6px;border-radius:8px;margin-top:2px;display:inline-block;letter-spacing:.06em}
-
-/* ===== TOPBAR ===== */
+.s-user{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--pin));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.uname{font-size:12px;font-weight:500}
+.urole{font-size:9px;color:var(--gold);background:rgba(232,160,32,.12);border:1px solid var(--border);padding:1px 6px;border-radius:8px;margin-top:2px;display:inline-block}
 #topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.page-title{font-size:15px;font-weight:600;color:var(--text)}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-.sync-label{font-size:10px;color:var(--green)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.topbar-right{display:flex;align-items:center;gap:10px}
+.page-title{font-size:15px;font-weight:600}
+.topbar-r{display:flex;align-items:center;gap:10px}
 .domain-chip{background:rgba(232,160,32,.1);border:1px solid var(--border);color:var(--gold);font-size:10px;padding:4px 11px;border-radius:20px}
-.notif-bell{cursor:pointer;color:var(--muted);font-size:16px;position:relative}
-.notif-count{position:absolute;top:-4px;right:-4px;background:var(--pin);color:#fff;font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-
-/* ===== CONTENT AREA ===== */
-#content-area{flex:1;overflow-y:auto;padding:20px;background:var(--dark)}
-#content-area::-webkit-scrollbar{width:4px}
-#content-area::-webkit-scrollbar-thumb{background:var(--border)}
-
-/* ===== PANELS ===== */
-.panel{display:none}
-.panel.active{display:block}
-
-/* ===== TOAST ===== */
-#toast{position:fixed;top:18px;right:20px;background:var(--card2);border:1px solid var(--success-border);color:var(--green);font-size:12px;padding:10px 16px;border-radius:8px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s;max-width:260px}
-#toast.show{opacity:1}
-
-/* ===== STAT CARDS ===== */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat-grid-3{grid-template-columns:repeat(3,1fr)}
-.stat-grid-2{grid-template-columns:repeat(2,1fr)}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
-.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
-.stat-val{font-size:21px;font-weight:700;line-height:1.1}
-.sv-gold{color:var(--gold)}
-.sv-green{color:var(--green)}
-.sv-red{color:var(--red)}
-.sv-blue{color:var(--blue)}
-.stat-sub{font-size:10px;color:var(--muted);margin-top:4px}
-.stat-trend-up{color:var(--green)}
-.stat-trend-down{color:var(--red)}
-
-/* ===== SECTION TITLES ===== */
-.sec-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px}
-
-/* ===== CARDS ===== */
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:4px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#content{flex:1;overflow-y:auto;padding:20px;background:var(--dark)}
+#content::-webkit-scrollbar{width:4px}
+#content::-webkit-scrollbar-thumb{background:var(--border)}
+.panel{display:none}.panel.active{display:block}
+#toast{position:fixed;top:18px;right:20px;background:var(--card);border:1px solid rgba(34,197,94,.3);color:var(--green);font-size:12px;padding:10px 16px;border-radius:8px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s;max-width:300px}
+#toast.show{opacity:1}#toast.err{border-color:rgba(230,0,35,.3);color:var(--red)}
+/* stats */
+.sg{display:grid;gap:12px;margin-bottom:18px}
+.sg4{grid-template-columns:repeat(4,1fr)}.sg3{grid-template-columns:repeat(3,1fr)}.sg2{grid-template-columns:repeat(2,1fr)}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.sv{font-size:21px;font-weight:700;line-height:1.1}
+.sv-gold{color:var(--gold)}.sv-green{color:var(--green)}.sv-red{color:var(--red)}
+.ss{font-size:10px;color:var(--muted);margin-top:4px}
+.tup{color:var(--green)}
+/* layout */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
-.card-sm{padding:12px}
-
-/* ===== GRID LAYOUTS ===== */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
-.grid-7030{display:grid;grid-template-columns:70fr 30fr;gap:14px;margin-bottom:16px}
-
-/* ===== CHARTS ===== */
-.mini-chart{display:flex;align-items:flex-end;gap:4px;height:56px;margin:8px 0 4px}
+.stitle{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px}
+/* chart */
+.mc{display:flex;align-items:flex-end;gap:4px;height:56px;margin:8px 0 4px}
 .bar{flex:1;border-radius:3px 3px 0 0;cursor:pointer;transition:opacity .15s}
-.bar:hover{opacity:.75}
-.bar-gold{background:rgba(232,160,32,.35)}
-.bar-gold:hover{background:var(--gold)}
-.bar-pin{background:rgba(230,0,35,.35)}
-.bar-pin:hover{background:var(--pin)}
-.bar-blue{background:rgba(59,139,240,.35)}
-.chart-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
-
-/* ===== TABLES ===== */
-.tbl-wrap{overflow-x:auto}
+.bar:hover{opacity:.7}
+.bg{background:rgba(232,160,32,.35)}.bg:hover{background:var(--gold)}
+.bp{background:rgba(230,0,35,.35)}.bp:hover{background:var(--pin)}
+.cl{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+/* table */
+.tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{text-align:left;color:var(--muted);font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:.1em;padding:6px 10px;border-bottom:1px solid var(--border)}
 td{padding:9px 10px;border-bottom:1px solid rgba(232,160,32,.06);color:var(--text);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(232,160,32,.03)}
-
-/* ===== BADGES ===== */
-.badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.06em;white-space:nowrap}
-.bg-green{background:rgba(34,197,94,.14);color:var(--green)}
-.bg-gold{background:rgba(232,160,32,.14);color:var(--gold)}
-.bg-red{background:rgba(230,0,35,.14);color:var(--red)}
-.bg-blue{background:rgba(59,139,240,.14);color:var(--blue)}
-.bg-gray{background:rgba(255,255,255,.08);color:var(--muted2)}
-
-/* ===== PROGRESS ===== */
-.prog-wrap{margin-bottom:10px}
-.prog-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
-.prog-bar{background:rgba(255,255,255,.07);border-radius:4px;height:5px}
-.prog-fill{height:100%;border-radius:4px;transition:width .4s}
-
-/* ===== FORMS ===== */
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-row-3{grid-template-columns:1fr 1fr 1fr}
-.form-row-1{grid-template-columns:1fr}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
-.form-input{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;width:100%;transition:border .15s}
-.form-input:focus{outline:none;border-color:var(--gold)}
-.form-input::placeholder{color:var(--muted)}
-select.form-input option{background:var(--dark);color:var(--text)}
-textarea.form-input{resize:vertical;min-height:72px}
-.btn-row{display:flex;gap:10px;margin-top:4px}
-.btn-primary{background:var(--gold);color:var(--dark);border:none;padding:9px 20px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
-.btn-primary:hover{opacity:.85}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:9px 16px;border-radius:7px;font-size:12px;cursor:pointer;transition:all .15s}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
-.btn-danger{background:rgba(230,0,35,.12);border:1px solid var(--danger-border);color:var(--red);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer;transition:all .15s}
-.btn-danger:hover{background:rgba(230,0,35,.22)}
-.btn-sm{padding:4px 10px;font-size:10px;border-radius:5px}
-.btn-action{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer;transition:all .15s;margin-right:4px}
-.btn-action:hover{border-color:var(--gold);color:var(--gold)}
-
-/* ===== COPY LINKS ===== */
-.cat-filter{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
-.cat-chip{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 13px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none}
-.cat-chip:hover{border-color:var(--gold);color:var(--gold)}
-.cat-chip.active{background:var(--gold);color:var(--dark);border-color:var(--gold);font-weight:700}
-
-.article-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(232,160,32,.07);gap:8px}
-.article-row:last-child{border-bottom:none}
-.article-title{font-size:12px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.cat-tag{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(232,160,32,.1);color:var(--gold);border:1px solid var(--border);white-space:nowrap;flex-shrink:0}
-.copy-btn{background:rgba(232,160,32,.08);border:1px solid var(--border);color:var(--gold);font-size:10px;padding:4px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.copy-btn:hover{background:var(--gold);color:var(--dark)}
-.copy-btn.copied{background:var(--green);color:#fff;border-color:var(--green)}
-
-/* ===== EARNINGS CALC ===== */
-.rpm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(232,160,32,.07);font-size:12px}
-.rpm-row:last-child{border-bottom:none}
-.rpm-label{color:var(--muted)}
-.rpm-val{font-weight:600;color:var(--text)}
-
-/* ===== LOGIN SCREEN ===== */
-#login-screen{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:999}
-.login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px 32px;width:100%;max-width:360px}
-.login-logo{text-align:center;margin-bottom:28px}
-.login-title{font-size:20px;font-weight:700;color:var(--gold);margin-bottom:4px}
-.login-sub{font-size:11px;color:var(--muted);letter-spacing:.06em}
-.login-form{display:flex;flex-direction:column;gap:14px}
-.login-err{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--red);font-size:11px;padding:8px 12px;border-radius:7px;display:none;text-align:center}
-.login-err.show{display:block}
-.forgot-link{font-size:10px;color:var(--muted);text-align:right;cursor:pointer;text-decoration:underline;margin-top:-6px}
-.forgot-link:hover{color:var(--gold)}
-
-/* ===== USER SWITCHER TAB ===== */
-.view-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border)}
-.view-tab{padding:8px 18px;font-size:11px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.04em}
-.view-tab:hover{color:var(--gold-l)}
-.view-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
-
-/* ===== ANALYTICS CARDS ===== */
-.analytics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.a-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:12px 14px;position:relative}
-.a-card-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
-.a-card-val{font-size:18px;font-weight:700}
-.a-card-icon{position:absolute;top:12px;right:12px;font-size:18px;opacity:.25}
-
-/* ===== INFO BOX ===== */
-.info-box{background:rgba(59,139,240,.08);border:1px solid rgba(59,139,240,.2);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--blue);line-height:1.7;margin-bottom:14px}
-.warning-box{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.2);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--gold);line-height:1.7;margin-bottom:14px}
-
-/* ===== LOADER ===== */
-.loader{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);padding:20px 0}
-.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+/* badge */
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.bg-g{background:rgba(34,197,94,.14);color:var(--green)}
+.bg-o{background:rgba(232,160,32,.14);color:var(--gold)}
+.bg-r{background:rgba(230,0,35,.14);color:var(--red)}
+.bg-b{background:rgba(59,139,240,.14);color:var(--blue)}
+.bg-x{background:rgba(255,255,255,.08);color:var(--muted)}
+/* progress */
+.pw{margin-bottom:10px}
+.pr{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.pb{background:rgba(255,255,255,.07);border-radius:4px;height:5px}
+.pf{height:100%;border-radius:4px}
+/* form */
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fr1{grid-template-columns:1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.fi{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;width:100%;transition:border .15s}
+.fi:focus{outline:none;border-color:var(--gold)}
+.fi::placeholder{color:var(--muted)}
+select.fi option{background:var(--dark)}
+.br{display:flex;gap:10px;margin-top:4px}
+.bp2{background:var(--gold);color:var(--dark);border:none;padding:9px 20px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.bp2:hover{opacity:.85}.bp2:disabled{opacity:.5;cursor:not-allowed}
+.bg2{background:transparent;border:1px solid var(--border);color:var(--muted);padding:9px 16px;border-radius:7px;font-size:12px;cursor:pointer}
+.bg2:hover{border-color:var(--gold);color:var(--gold)}
+.bd{background:rgba(230,0,35,.12);border:1px solid rgba(230,0,35,.3);color:var(--red);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer}
+.ba{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer;margin-right:4px}
+.ba:hover{border-color:var(--gold);color:var(--gold)}
+.bsm{padding:5px 12px;font-size:11px}
+/* cat filter */
+.cf{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.cc{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 13px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none}
+.cc:hover{border-color:var(--gold);color:var(--gold)}
+.cc.active{background:var(--gold);color:var(--dark);border-color:var(--gold);font-weight:700}
+/* article row */
+.ar{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(232,160,32,.07);gap:8px}
+.ar:last-child{border-bottom:none}
+.at{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.act{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(232,160,32,.1);color:var(--gold);border:1px solid var(--border);white-space:nowrap;flex-shrink:0}
+.cb2{background:rgba(232,160,32,.08);border:1px solid var(--border);color:var(--gold);font-size:10px;padding:4px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.cb2:hover{background:var(--gold);color:var(--dark)}
+.cb2.copied{background:var(--green);color:#fff;border-color:var(--green)}
+/* rpm row */
+.rr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(232,160,32,.07);font-size:12px}
+.rr:last-child{border-bottom:none}
+/* boxes */
+.ibox{background:rgba(59,139,240,.08);border:1px solid rgba(59,139,240,.2);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--blue);line-height:1.7;margin-bottom:14px}
+.wbox{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.2);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--gold);line-height:1.7;margin-bottom:14px}
+/* loader */
+.ld{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);padding:16px 0}
+.sp{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* ===== SCROLLBAR ===== */
+/* login */
+#ls{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:999}
+.lb{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px 32px;width:100%;max-width:360px}
+.le{background:rgba(230,0,35,.12);border:1px solid rgba(230,0,35,.3);color:var(--red);font-size:11px;padding:8px 12px;border-radius:7px;display:none;text-align:center;margin-bottom:10px}
+.le.show{display:block}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-
-/* ===== RESPONSIVE ===== */
-@media(max-width:900px){
-  #sidebar{width:50px}
-  .nav-item span:not(.nav-icon){display:none}
-  .nav-section,.user-name,.user-role,.logo-name,.logo-domain,.pin-badge{display:none}
-  .user-avatar{margin:0 auto}
-  .stat-grid{grid-template-columns:repeat(2,1fr)}
-  .grid-2,.grid-3{grid-template-columns:1fr}
-}
 </style>
 </head>
 <body>
 
-<!-- ===== LOGIN SCREEN ===== -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div style="display:inline-block;background:var(--pin);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;letter-spacing:.1em;margin-bottom:8px;">PINTEREST</div>
-      <div class="login-title">Social Gold</div>
-      <div class="login-sub">socialgold.com · captionmood.com</div>
+<!-- LOGIN -->
+<div id="ls">
+  <div class="lb">
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="pin-badge">PINTEREST</div>
+      <div style="font-size:20px;font-weight:700;color:var(--gold);margin-top:6px">Social Gold</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">socialgold.com &middot; captionmood.com</div>
     </div>
-    <div class="login-form">
-      <div class="login-err" id="login-err">Invalid email or password.</div>
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-input" id="l-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
-      </div>
-      <div class="forgot-link" onclick="alert('Contact admin to reset password.')">Forgot password?</div>
-      <button class="btn-primary" style="width:100%;padding:11px;" onclick="doLogin()">Sign In</button>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-4px;">
-        Demo: admin@socialgold.com / admin123<br>user@socialgold.com / user123
-      </div>
+    <div class="le" id="le">Galat email ya password.</div>
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl">Email</label>
+      <input type="email" class="fi" id="li-email" placeholder="email@domain.com" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
+    <div class="fg" style="margin-bottom:16px">
+      <label class="fl">Password</label>
+      <input type="password" class="fi" id="li-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="bp2" id="li-btn" style="width:100%;padding:11px" onclick="doLogin()">Sign In</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:12px">Supabase Real Database Connected</div>
   </div>
 </div>
 
-<!-- ===== MAIN APP ===== -->
+<!-- APP -->
 <div id="app">
-
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <div class="logo-area">
       <div class="pin-badge">PINTEREST</div>
       <div class="logo-name">Social Gold</div>
       <div class="logo-domain">socialgold.com</div>
     </div>
-    <nav class="nav" id="nav">
-      <!-- filled by JS based on role -->
-    </nav>
+    <nav class="nav" id="nav"></nav>
     <div class="sidebar-bottom">
-      <div class="user-info">
-        <div class="user-avatar" id="sb-avatar">SG</div>
+      <div class="s-user">
+        <div class="avatar" id="sb-av">SG</div>
         <div>
-          <div class="user-name" id="sb-name">Loading...</div>
-          <div class="user-role" id="sb-role">USER</div>
+          <div class="uname" id="sb-nm">—</div>
+          <div class="urole" id="sb-rl">USER</div>
         </div>
       </div>
-      <div style="margin-top:10px;">
-        <button class="btn-ghost" style="width:100%;font-size:10px;padding:6px;" onclick="doLogout()">Sign Out</button>
-      </div>
+      <button class="bg2" style="width:100%;font-size:10px;padding:6px;margin-top:10px" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 
-  <!-- MAIN -->
   <div id="main">
     <div id="topbar">
-      <div class="topbar-left">
-        <div class="page-title" id="page-title">Dashboard</div>
-        <div class="sync-dot"></div>
-        <div class="sync-label" id="sync-label">Live</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="page-title" id="ptitle">Dashboard</div>
+        <span class="dot"></span>
+        <span style="font-size:10px;color:var(--green)">Live</span>
       </div>
-      <div class="topbar-right">
+      <div class="topbar-r">
         <div class="domain-chip">captionmood.com</div>
-        <div class="notif-bell" onclick="toast('No new notifications.')">
-          🔔
-          <div class="notif-count">3</div>
-        </div>
-        <div class="user-avatar" id="top-avatar" style="width:28px;height:28px;font-size:11px;cursor:pointer;" onclick="toast('Profile settings coming soon.')">SG</div>
+        <div class="avatar" id="top-av" style="width:28px;height:28px;font-size:11px;cursor:pointer">SG</div>
       </div>
     </div>
 
-    <!-- CONTENT AREA -->
-    <div id="content-area">
+    <div id="content">
 
-      <!-- ============================================================ -->
-      <!-- ADMIN PANELS -->
-      <!-- ============================================================ -->
-
-      <!-- ADMIN: OVERVIEW -->
-      <div class="panel" id="panel-admin-overview">
-        <div class="stat-grid">
-          <div class="stat-card">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-val sv-gold" id="ov-users">1,284</div>
-            <div class="stat-sub stat-trend-up">+38 this week</div>
+      <!-- ADMIN OVERVIEW -->
+      <div class="panel" id="p-admin-overview">
+        <div class="sg sg4">
+          <div class="sc"><div class="sl">Total Users</div><div class="sv sv-gold" id="ov-u">—</div></div>
+          <div class="sc"><div class="sl">Pinterest Clicks</div><div class="sv" id="ov-cl">94,720</div><div class="ss tup">+12.4% this month</div></div>
+          <div class="sc"><div class="sl">Total Revenue</div><div class="sv sv-green">$4,812</div><div class="ss">AdSense approved</div></div>
+          <div class="sc"><div class="sl">Current RPM</div><div class="sv sv-gold" id="ov-rpm">—</div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="stitle">Pinterest Traffic — 7 Days</div><div class="mc" id="c-pin"></div><div class="cl"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+          <div class="card"><div class="stitle">Revenue — 7 Days ($)</div><div class="mc" id="c-rev"></div><div class="cl"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+        </div>
+        <div class="card">
+          <div class="stitle">Top Articles <span style="color:var(--green);font-size:9px;font-weight:400;margin-left:6px">● Live Supabase</span></div>
+          <div class="tw"><table><thead><tr><th>Article</th><th>Category</th><th>Clicks</th><th>RPM</th><th>Earned</th><th>Status</th></tr></thead><tbody id="ov-at"><tr><td colspan="6"><div class="ld"><div class="sp"></div>Loading...</div></td></tr></tbody></table></div>
+        </div>
+        <div class="g3">
+          <div class="card"><div class="stitle">Traffic Sources</div>
+            <div class="pw"><div class="pr"><span>Pinterest</span><span style="color:var(--pin)">78%</span></div><div class="pb"><div class="pf" style="width:78%;background:var(--pin)"></div></div></div>
+            <div class="pw"><div class="pr"><span>Google</span><span style="color:var(--blue)">14%</span></div><div class="pb"><div class="pf" style="width:14%;background:var(--blue)"></div></div></div>
+            <div class="pw"><div class="pr"><span>Direct</span><span style="color:var(--muted)">8%</span></div><div class="pb"><div class="pf" style="width:8%;background:var(--muted)"></div></div></div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Pinterest Clicks (Month)</div>
-            <div class="stat-val" id="ov-clicks">94,720</div>
-            <div class="stat-sub stat-trend-up">+12.4% vs last month</div>
+          <div class="card"><div class="stitle">Payout Summary</div>
+            <div class="rr"><span style="color:var(--muted)">Pending</span><span style="color:var(--gold);font-weight:600">$1,240</span></div>
+            <div class="rr"><span style="color:var(--muted)">Paid This Month</span><span style="color:var(--green);font-weight:600">$3,572</span></div>
+            <div class="rr"><span style="color:var(--muted)">Total Users</span><span id="ov-u2">—</span></div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Revenue</div>
-            <div class="stat-val sv-green" id="ov-rev">$4,812</div>
-            <div class="stat-sub">AdSense · captionmood.com</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Average RPM</div>
-            <div class="stat-val sv-gold" id="ov-rpm">$5.08</div>
-            <div class="stat-sub stat-trend-up">AdSense approved</div>
+          <div class="card"><div class="stitle">Article Sync</div>
+            <div style="font-size:28px;font-weight:700;color:var(--gold);margin:8px 0 4px" id="ov-ac">—</div>
+            <div style="font-size:11px;color:var(--muted)">Articles in Supabase</div>
+            <div style="font-size:11px;color:var(--green);margin-top:6px" id="ov-st">Checking...</div>
           </div>
         </div>
+      </div>
 
-        <div class="grid-2">
+      <!-- ADMIN USERS -->
+      <div class="panel" id="p-admin-users">
+        <div class="sg sg3">
+          <div class="sc"><div class="sl">Total Users</div><div class="sv sv-gold" id="u-tot">—</div></div>
+          <div class="sc"><div class="sl">Active</div><div class="sv sv-green" id="u-act">—</div></div>
+          <div class="sc"><div class="sl">Suspended</div><div class="sv sv-red" id="u-sus">—</div></div>
+        </div>
+        <div class="card">
+          <div class="stitle">New User Add Karo — Direct Supabase Mein Save Hoga</div>
+          <div class="fr">
+            <div class="fg"><label class="fl">Full Name *</label><input type="text" class="fi" id="nu-n" placeholder="e.g. Ali Ahmed"/></div>
+            <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="nu-e" placeholder="user@email.com"/></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label class="fl">Password *</label><input type="password" class="fi" id="nu-p" placeholder="Min 6 characters"/></div>
+            <div class="fg"><label class="fl">Role</label>
+              <select class="fi" id="nu-r"><option value="User">User</option><option value="Editor">Editor</option><option value="Moderator">Moderator</option><option value="Admin">Admin</option></select>
+            </div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label class="fl">Category Access</label>
+              <select class="fi" id="nu-c"><option value="All Categories">All Categories</option><option value="Social Media Captions">Social Media Captions</option><option value="Food & Recipes Ideas">Food & Recipes Ideas</option><option value="Travel Ideas">Travel Ideas</option><option value="Pick Up Lines">Pick Up Lines</option><option value="Beauty">Beauty</option><option value="Tech">Tech</option><option value="Home Decor">Home Decor</option><option value="Events">Events</option><option value="Celebrity">Celebrity</option></select>
+            </div>
+            <div class="fg"><label class="fl">Payment Method</label>
+              <select class="fi" id="nu-pm"><option>JazzCash</option><option>Easypaisa</option><option>Bank Transfer</option><option>PayPal</option></select>
+            </div>
+          </div>
+          <div class="fg fr1" style="margin-bottom:12px"><label class="fl">Payment Account Number</label><input type="text" class="fi" id="nu-pa" placeholder="03XX-XXXXXXX"/></div>
+          <div class="br">
+            <button class="bp2" id="add-u-btn" onclick="addUser()">Add User to Supabase</button>
+            <button class="bg2" onclick="clearUser()">Clear</button>
+          </div>
+          <div id="add-u-msg" style="font-size:11px;margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="stitle" style="margin-bottom:0">All Users <span style="color:var(--green);font-size:9px;font-weight:400">● Live</span></div>
+            <input type="text" class="fi" style="width:180px;padding:5px 10px" placeholder="Search..." oninput="searchU(this.value)"/>
+          </div>
+          <div class="tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Category</th><th>Clicks</th><th>Earned</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead><tbody id="u-tb"><tr><td colspan="9"><div class="ld"><div class="sp"></div>Loading from Supabase...</div></td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ADMIN PAYMENTS -->
+      <div class="panel" id="p-admin-payments">
+        <div class="sg sg4">
+          <div class="sc"><div class="sl">Total Paid</div><div class="sv sv-green">$14,820</div></div>
+          <div class="sc"><div class="sl">Pending</div><div class="sv sv-gold">$1,240</div></div>
+          <div class="sc"><div class="sl">Current RPM</div><div class="sv" id="pay-rpm">—</div></div>
+          <div class="sc"><div class="sl">Min Payout</div><div class="sv" id="pay-min">—</div></div>
+        </div>
+        <div class="g2">
           <div class="card">
-            <div class="sec-title">Pinterest Traffic — 7 Days</div>
-            <div class="mini-chart" id="chart-pin"></div>
-            <div class="chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="stitle">RPM Settings — Supabase Mein Save</div>
+            <div class="fr fr1"><div class="fg"><label class="fl">RPM ($ per 1000 views)</label><input type="number" class="fi" id="rpm-v" value="5.08" step="0.01"/></div></div>
+            <div class="fr">
+              <div class="fg"><label class="fl">Min Payout ($)</label><input type="number" class="fi" id="minp-v" value="10"/></div>
+              <div class="fg"><label class="fl">Payout Cycle</label><select class="fi"><option>Monthly</option><option>Bi-weekly</option><option>Weekly</option></select></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label class="fl">Admin Commission %</label><input type="number" class="fi" value="20"/></div>
+              <div class="fg"><label class="fl">Default Method</label><select class="fi"><option>JazzCash</option><option>Easypaisa</option><option>Bank Transfer</option></select></div>
+            </div>
+            <button class="bp2" onclick="saveRPM()">Save to Supabase</button>
           </div>
           <div class="card">
-            <div class="sec-title">AdSense Revenue — 7 Days ($)</div>
-            <div class="mini-chart" id="chart-rev"></div>
-            <div class="chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="stitle">Monthly Revenue ($)</div>
+            <div class="mc" id="c-mon"></div>
+            <div class="cl"><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span></div>
+            <div style="margin-top:12px">
+              <div class="rr"><span style="color:var(--muted)">This Month</span><span style="color:var(--green);font-weight:600">$4,812</span></div>
+              <div class="rr"><span style="color:var(--muted)">Last Month</span><span>$3,940</span></div>
+              <div class="rr"><span style="color:var(--muted)">Growth</span><span style="color:var(--green)">+22.1%</span></div>
+            </div>
           </div>
         </div>
-
         <div class="card">
-          <div class="sec-title">Top Articles — captionmood.com <span style="margin-left:8px;font-size:9px;color:var(--green);font-weight:400;">● Auto-synced</span></div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Article</th><th>Category</th><th>Pinterest Clicks</th><th>RPM</th><th>Earned ($)</th><th>Status</th></tr></thead>
-              <tbody id="ov-articles-table"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="grid-3">
-          <div class="card">
-            <div class="sec-title">Traffic Sources</div>
-            <div id="ov-traffic-sources"></div>
-          </div>
-          <div class="card">
-            <div class="sec-title">Payout Summary</div>
-            <div id="ov-payout-summary"></div>
-          </div>
-          <div class="card">
-            <div class="sec-title">Article Sync Status</div>
-            <div style="font-size:28px;font-weight:700;color:var(--gold);margin:8px 0 4px;" id="ov-article-count">0</div>
-            <div style="font-size:11px;color:var(--muted);">Articles from captionmood.com</div>
-            <div style="font-size:11px;color:var(--green);margin-top:6px;" id="ov-sync-time">Syncing...</div>
-          </div>
+          <div class="stitle">Transactions <span style="color:var(--green);font-size:9px;font-weight:400">● Live Supabase</span></div>
+          <div class="tw"><table><thead><tr><th>User</th><th>Amount</th><th>RPM</th><th>Views</th><th>Method</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="pay-tb"><tr><td colspan="8"><div class="ld"><div class="sp"></div>Loading...</div></td></tr></tbody></table></div>
         </div>
       </div>
 
-      <!-- ADMIN: USERS -->
-      <div class="panel" id="panel-admin-users">
-        <div class="stat-grid stat-grid-3">
-          <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-val sv-gold" id="u-total">1,284</div></div>
-          <div class="stat-card"><div class="stat-label">Active Today</div><div class="stat-val sv-green">312</div></div>
-          <div class="stat-card"><div class="stat-label">Suspended</div><div class="stat-val sv-red">7</div></div>
+      <!-- ADMIN ANALYTICS -->
+      <div class="panel" id="p-admin-analytics">
+        <div class="ibox"><strong>GA4 Setup:</strong> analytics.google.com → Admin → Data Streams → captionmood.com. WordPress par "Site Kit by Google" plugin install karo. Measurement ID neeche save karo.</div>
+        <div class="sg sg4">
+          <div class="sc"><div class="sl">Total Pageviews</div><div class="sv">284,100</div><div class="ss tup">+8.2%</div></div>
+          <div class="sc"><div class="sl">Pinterest Sessions</div><div class="sv sv-gold">221,580</div></div>
+          <div class="sc"><div class="sl">Avg Session</div><div class="sv">2m 14s</div></div>
+          <div class="sc"><div class="sl">Bounce Rate</div><div class="sv sv-red">61%</div></div>
         </div>
-
         <div class="card">
-          <div class="sec-title">Add New User</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="nu-name" placeholder="e.g. Ayesha Khan" /></div>
-            <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="nu-email" placeholder="user@email.com" /></div>
+          <div class="stitle">GA4 + AdSense Config</div>
+          <div class="fr">
+            <div class="fg"><label class="fl">GA4 Measurement ID</label><input type="text" class="fi" id="ga4-id" placeholder="G-XXXXXXXXXX"/></div>
+            <div class="fg"><label class="fl">AdSense Publisher ID</label><input type="text" class="fi" placeholder="pub-XXXXXXXXXXXXXXXX"/></div>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="nu-pass" placeholder="Min 8 characters" /></div>
-            <div class="form-group"><label class="form-label">Role</label>
-              <select class="form-input" id="nu-role"><option>User</option><option>Editor</option><option>Moderator</option><option>Admin</option></select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Category Access</label>
-              <select class="form-input" id="nu-cat"><option>All Categories</option><option>Captions Only</option><option>Quotes Only</option><option>Love Only</option><option>Humor Only</option><option>Custom</option></select>
-            </div>
-            <div class="form-group"><label class="form-label">Payment Method</label>
-              <select class="form-input" id="nu-pay"><option>Bank Transfer</option><option>JazzCash</option><option>Easypaisa</option><option>PayPal</option></select>
-            </div>
-          </div>
-          <div class="btn-row">
-            <button class="btn-primary" onclick="addUser()">Add User</button>
-            <button class="btn-ghost" onclick="clearAddUser()">Clear</button>
-          </div>
+          <div class="br"><button class="bp2" onclick="saveGA4()">Save to Supabase</button><button class="bg2" onclick="testGA4()">Test</button></div>
+          <div id="ga4-st" style="font-size:11px;margin-top:8px;color:var(--muted)"></div>
         </div>
-
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div class="sec-title" style="margin-bottom:0">All Users</div>
-            <input type="text" class="form-input" style="width:180px;padding:5px 10px;" placeholder="Search users..." oninput="searchUsers(this.value)" />
-          </div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Category</th><th>Clicks</th><th>Earned</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="users-table-body"></tbody>
-            </table>
-          </div>
+          <div class="stitle">Category Performance</div>
+          <div class="tw"><table><thead><tr><th>Category</th><th>Articles</th><th>Clicks</th><th>Revenue</th><th>Share</th></tr></thead><tbody id="an-tb"></tbody></table></div>
         </div>
       </div>
 
-      <!-- ADMIN: PAYMENTS -->
-      <div class="panel" id="panel-admin-payments">
-        <div class="stat-grid">
-          <div class="stat-card"><div class="stat-label">Total Paid (All Time)</div><div class="stat-val sv-green">$14,820</div></div>
-          <div class="stat-card"><div class="stat-label">Pending Payouts</div><div class="stat-val sv-gold">$1,240</div></div>
-          <div class="stat-card"><div class="stat-label">Avg RPM (AdSense)</div><div class="stat-val">$5.08</div></div>
-          <div class="stat-card"><div class="stat-label">Min Payout</div><div class="stat-val">$10</div></div>
-        </div>
-
-        <div class="grid-2">
-          <div class="card">
-            <div class="sec-title">RPM & Payout Settings</div>
-            <div class="form-row form-row-1">
-              <div class="form-group"><label class="form-label">Current RPM ($ per 1000 views)</label><input type="number" class="form-input" id="rpm-val" value="5.08" step="0.01" /></div>
-            </div>
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">Minimum Payout ($)</label><input type="number" class="form-input" id="min-payout" value="10" /></div>
-              <div class="form-group"><label class="form-label">Payout Cycle</label>
-                <select class="form-input"><option>Monthly</option><option>Bi-weekly</option><option>Weekly</option></select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">Default Payment Method</label>
-                <select class="form-input"><option>Bank Transfer</option><option>JazzCash</option><option>Easypaisa</option><option>PayPal</option></select>
-              </div>
-              <div class="form-group"><label class="form-label">Admin Commission %</label><input type="number" class="form-input" value="20" min="0" max="100" /></div>
-            </div>
-            <button class="btn-primary" onclick="saveRPM()">Save Settings</button>
-          </div>
-
-          <div class="card">
-            <div class="sec-title">Monthly Revenue ($)</div>
-            <div class="mini-chart" id="chart-monthly-rev"></div>
-            <div class="chart-labels"><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span></div>
-            <div style="margin-top:14px;">
-              <div class="rpm-row"><span class="rpm-label">This Month</span><span class="rpm-val sv-green">$4,812</span></div>
-              <div class="rpm-row"><span class="rpm-label">Last Month</span><span class="rpm-val">$3,940</span></div>
-              <div class="rpm-row"><span class="rpm-label">Growth</span><span class="rpm-val sv-green">+22.1%</span></div>
-            </div>
-          </div>
-        </div>
-
+      <!-- ADMIN ARTICLE SYNC -->
+      <div class="panel" id="p-admin-articles">
+        <div class="wbox"><strong>WordPress Auto-Sync:</strong> captionmood.com/wp-json/wp/v2/posts se articles fetch honge. "Sync Now" dabao manually. Functions.php code se naye articles auto sync honge.</div>
         <div class="card">
-          <div class="sec-title">Payment Transactions</div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>User</th><th>Amount</th><th>RPM</th><th>Views</th><th>Method</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody id="payments-table"></tbody>
-            </table>
+          <div class="stitle">Sync Settings</div>
+          <div class="fr">
+            <div class="fg"><label class="fl">WordPress URL</label><input type="text" class="fi" id="wp-url" value="https://captionmood.com"/></div>
+            <div class="fg"><label class="fl">Posts Per Fetch</label><input type="number" class="fi" id="wp-pp" value="100"/></div>
           </div>
+          <div class="br"><button class="bp2" id="sync-btn" onclick="syncArticles()">Sync Now from captionmood.com</button></div>
+          <div id="sync-st" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="stitle" style="margin-bottom:0">Synced Articles <span id="art-cnt" style="color:var(--muted);font-weight:400"></span></div>
+            <input type="text" class="fi" style="width:180px;padding:5px 10px" placeholder="Search..." oninput="searchArt(this.value)"/>
+          </div>
+          <div id="art-list"><div class="ld"><div class="sp"></div>Loading...</div></div>
         </div>
       </div>
 
-      <!-- ADMIN: ANALYTICS -->
-      <div class="panel" id="panel-admin-analytics">
-        <div class="info-box">
-          <strong>Google Analytics 4 Integration:</strong> Connect your GA4 property to see real-time data. Add your Measurement ID below. For AdSense data, link your AdSense account in Google Analytics.
-        </div>
-        <div class="stat-grid">
-          <div class="stat-card"><div class="stat-label">Total Pageviews</div><div class="stat-val">284,100</div><div class="stat-sub stat-trend-up">+8.2% this month</div></div>
-          <div class="stat-card"><div class="stat-label">Pinterest Sessions</div><div class="stat-val sv-gold">221,580</div><div class="stat-sub">78% of total traffic</div></div>
-          <div class="stat-card"><div class="stat-label">Avg Session Time</div><div class="stat-val">2m 14s</div><div class="stat-sub stat-trend-up">+18s vs last month</div></div>
-          <div class="stat-card"><div class="stat-label">Bounce Rate</div><div class="stat-val sv-red">61%</div><div class="stat-sub stat-trend-down">High (Pinterest normal)</div></div>
-        </div>
-
+      <!-- USER ARTICLES -->
+      <div class="panel" id="p-user-articles">
+        <div class="stitle">Article Links — captionmood.com</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Category choose karo → Link copy karo → Pinterest par share karo → RPM se kamao</div>
+        <div class="cf" id="u-cats"></div>
         <div class="card">
-          <div class="sec-title">GA4 Configuration</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">GA4 Measurement ID</label><input type="text" class="form-input" id="ga4-id" placeholder="G-XXXXXXXXXX" /></div>
-            <div class="form-group"><label class="form-label">AdSense Publisher ID</label><input type="text" class="form-input" id="adsense-id" placeholder="pub-XXXXXXXXXXXXXXXX" /></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--muted)" id="u-art-cnt">Loading...</div>
+            <input type="text" class="fi" style="width:160px;padding:5px 10px" placeholder="Search..." oninput="filterArt(this.value)"/>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">GA4 API Secret</label><input type="password" class="form-input" placeholder="From GA4 Admin → Data Streams" /></div>
-            <div class="form-group"><label class="form-label">Property ID</label><input type="text" class="form-input" placeholder="123456789" /></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn-primary" onclick="saveGA4()">Connect GA4</button>
-            <button class="btn-ghost" onclick="testGA4()">Test Connection</button>
-          </div>
-          <div id="ga4-status" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
-        </div>
-
-        <div class="card">
-          <div class="sec-title">Category Performance</div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Category</th><th>Articles</th><th>Pinterest Clicks</th><th>Pageviews</th><th>Revenue ($)</th><th>RPM</th><th>Share</th></tr></thead>
-              <tbody id="analytics-cat-table"></tbody>
-            </table>
-          </div>
+          <div id="u-art-list"><div class="ld"><div class="sp"></div>Loading articles...</div></div>
         </div>
       </div>
 
-      <!-- ADMIN: ARTICLES SYNC -->
-      <div class="panel" id="panel-admin-articles">
-        <div class="warning-box">
-          <strong>WordPress REST API Auto-Sync:</strong> Articles from captionmood.com are automatically fetched every 5 minutes. New articles appear in all user dashboards instantly. Configure the sync settings below.
+      <!-- USER EARNINGS -->
+      <div class="panel" id="p-user-earnings">
+        <div class="sg sg3">
+          <div class="sc"><div class="sl">Total Earned</div><div class="sv sv-green" id="ue-tot">—</div></div>
+          <div class="sc"><div class="sl">This Month (Est.)</div><div class="sv sv-gold" id="ue-mon">—</div></div>
+          <div class="sc"><div class="sl">Current RPM</div><div class="sv" id="ue-rpm">—</div></div>
         </div>
         <div class="card">
-          <div class="sec-title">Sync Configuration</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">WordPress Site URL</label><input type="text" class="form-input" id="wp-url" value="https://captionmood.com" /></div>
-            <div class="form-group"><label class="form-label">Sync Interval</label>
-              <select class="form-input"><option>Every 5 minutes</option><option>Every 15 minutes</option><option>Every hour</option><option>Manual only</option></select>
-            </div>
+          <div class="stitle">RPM Calculator</div>
+          <div class="ibox" style="margin-bottom:12px">Earnings = (Clicks × RPM) ÷ 1000 &nbsp;|&nbsp; Live RPM from Supabase</div>
+          <div class="fr">
+            <div class="fg"><label class="fl">Pinterest Clicks Daalo</label><input type="number" class="fi" id="calc-c" placeholder="e.g. 5000" oninput="calcE()"/></div>
+            <div class="fg"><label class="fl">Estimated Earning</label><div class="fi sv-gold" style="font-size:18px;font-weight:700;background:rgba(232,160,32,.06)" id="calc-r">$0.00</div></div>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Posts Per Fetch</label><input type="number" class="form-input" value="100" /></div>
-            <div class="form-group"><label class="form-label">WordPress API Key (optional)</label><input type="password" class="form-input" placeholder="For private/password-protected sites" /></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn-primary" onclick="fetchWPArticles()">Sync Now</button>
-            <button class="btn-ghost">Save Settings</button>
-          </div>
-          <div id="wp-sync-status" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
         </div>
-
-        <div class="card" id="wp-articles-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div class="sec-title" style="margin-bottom:0">Synced Articles <span id="wp-article-count" style="color:var(--muted);font-weight:400;"></span></div>
-            <input type="text" class="form-input" style="width:180px;padding:5px 10px;" placeholder="Search articles..." oninput="searchWPArticles(this.value)" />
-          </div>
-          <div id="wp-articles-list"><div class="loader"><div class="spinner"></div>Loading articles...</div></div>
+        <div class="card">
+          <div class="stitle">Earnings History</div>
+          <div class="tw"><table><thead><tr><th>Date</th><th>Article</th><th>Clicks</th><th>RPM</th><th>Earned</th></tr></thead><tbody id="ue-tb"></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="stitle">Payment Info</div>
+          <div class="rr"><span style="color:var(--muted)">Pending Payout</span><span style="color:var(--gold);font-weight:600" id="ue-pend">—</span></div>
+          <div class="rr"><span style="color:var(--muted)">Minimum Payout</span><span id="ue-minp">—</span></div>
+          <div class="rr"><span style="color:var(--muted)">Payment Method</span><span id="ue-pm">—</span></div>
+          <div class="rr"><span style="color:var(--muted)">Account</span><span id="ue-pa">—</span></div>
         </div>
       </div>
 
-      <!-- ============================================================ -->
-      <!-- USER PANELS -->
-      <!-- ============================================================ -->
-
-      <!-- USER: ARTICLE LINKS -->
-      <div class="panel" id="panel-user-articles">
-        <div style="margin-bottom:14px;">
-          <div class="sec-title">Browse & Copy Article Links</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Select a category below, then copy the article link to share on Pinterest and earn via RPM.</div>
-          <div class="cat-filter" id="user-cat-filter"></div>
+      <!-- USER REPORTS -->
+      <div class="panel" id="p-user-reports">
+        <div class="sg sg3">
+          <div class="sc"><div class="sl">Total Clicks</div><div class="sv" id="ur-cl">—</div></div>
+          <div class="sc"><div class="sl">Total Earned</div><div class="sv sv-green" id="ur-ea">—</div></div>
+          <div class="sc"><div class="sl">My Articles</div><div class="sv sv-gold" id="ur-ar">—</div></div>
         </div>
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="font-size:11px;color:var(--muted);" id="articles-count-label">All articles</div>
-            <input type="text" class="form-input" style="width:160px;padding:5px 10px;" placeholder="Search..." oninput="filterUserArticles(this.value)" />
-          </div>
-          <div id="user-articles-list"><div class="loader"><div class="spinner"></div>Loading articles from captionmood.com...</div></div>
+          <div class="stitle">My Pinterest Traffic — 7 Days</div>
+          <div class="mc" id="u-chart"></div>
+          <div class="cl"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        </div>
+        <div class="card">
+          <div class="stitle">Top Articles</div>
+          <div class="tw"><table><thead><tr><th>Article</th><th>Category</th><th>Clicks</th><th>Earned</th></tr></thead><tbody id="ur-tb"></tbody></table></div>
         </div>
       </div>
 
-      <!-- USER: EARNINGS -->
-      <div class="panel" id="panel-user-earnings">
-        <div class="stat-grid stat-grid-3">
-          <div class="stat-card"><div class="stat-label">My Total Earned</div><div class="stat-val sv-green" id="ue-total">$0.00</div></div>
-          <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-val sv-gold" id="ue-month">$0.00</div></div>
-          <div class="stat-card"><div class="stat-label">Current RPM</div><div class="stat-val" id="ue-rpm">$5.08</div></div>
-        </div>
-
-        <div class="card">
-          <div class="sec-title">RPM Earnings Calculator</div>
-          <div class="info-box" style="margin-bottom:12px;">
-            Earnings = (Your Pinterest Clicks × RPM) ÷ 1000 &nbsp;|&nbsp; Current RPM: <strong>$5.08</strong> (live AdSense rate from captionmood.com)
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Enter Pinterest Clicks</label>
-              <input type="number" class="form-input" id="calc-clicks" placeholder="e.g. 5000" oninput="calcEarnings()" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Estimated Earnings</label>
-              <div class="form-input" style="font-size:18px;font-weight:700;color:var(--gold);background:rgba(232,160,32,.06);" id="calc-result">$0.00</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sec-title">My Earnings History</div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Date</th><th>Article</th><th>Pinterest Clicks</th><th>RPM</th><th>Earned ($)</th></tr></thead>
-              <tbody id="user-earnings-table"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sec-title">Payment Info</div>
-          <div class="rpm-row"><span class="rpm-label">Pending Payout</span><span class="rpm-val sv-gold" id="ue-pending">$0.00</span></div>
-          <div class="rpm-row"><span class="rpm-label">Minimum Payout</span><span class="rpm-val">$10.00</span></div>
-          <div class="rpm-row"><span class="rpm-label">Payment Method</span><span class="rpm-val">JazzCash</span></div>
-          <div class="rpm-row"><span class="rpm-label">Next Payout Date</span><span class="rpm-val">May 31, 2025</span></div>
-        </div>
-      </div>
-
-      <!-- USER: REPORTS -->
-      <div class="panel" id="panel-user-reports">
-        <div class="stat-grid stat-grid-3">
-          <div class="stat-card"><div class="stat-label">Total Pinterest Clicks</div><div class="stat-val" id="ur-clicks">0</div></div>
-          <div class="stat-card"><div class="stat-label">Articles Shared</div><div class="stat-val sv-gold" id="ur-articles">0</div></div>
-          <div class="stat-card"><div class="stat-label">Best Day Earnings</div><div class="stat-val sv-green" id="ur-best">$0.00</div></div>
-        </div>
-        <div class="card">
-          <div class="sec-title">My Pinterest Traffic — 7 Days</div>
-          <div class="mini-chart" id="user-chart"></div>
-          <div class="chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
-        </div>
-        <div class="card">
-          <div class="sec-title">My Top Articles</div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Article</th><th>Category</th><th>Total Clicks</th><th>Earned ($)</th></tr></thead>
-              <tbody id="user-top-articles"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- end content-area -->
-  </div><!-- end main -->
-</div><!-- end app -->
-
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
-// ============================================================
-// DATA STORE
-// ============================================================
-const DB = {
-  rpm: 5.08,
-  minPayout: 10,
-  users: [
-    {id:1,name:"Admin User",email:"admin@socialgold.com",pass:"admin123",role:"Admin",cat:"All Categories",pay:"Bank Transfer",clicks:12000,earned:60.96,status:"active"},
-    {id:2,name:"Ayesha Khan",email:"user@socialgold.com",pass:"user123",role:"User",cat:"All Categories",pay:"JazzCash",clicks:4210,earned:21.39,status:"active"},
-    {id:3,name:"Bilal Ahmed",email:"bilal@socialgold.com",pass:"bilal123",role:"Editor",cat:"Captions Only",pay:"JazzCash",clicks:8820,earned:44.81,status:"active"},
-    {id:4,name:"Sara Iqbal",email:"sara@socialgold.com",pass:"sara123",role:"User",cat:"Quotes Only",pay:"Easypaisa",clicks:2100,earned:10.67,status:"suspended"},
-    {id:5,name:"Usman Malik",email:"usman@socialgold.com",pass:"usman123",role:"User",cat:"All Categories",pay:"Bank Transfer",clicks:6490,earned:32.97,status:"active"},
-  ],
-  articles: [
-    {id:1,title:"200+ Birthday Captions for Instagram 2025",cat:"Birthday",url:"https://captionmood.com/birthday-captions",clicks:12840,date:"2025-04-28"},
-    {id:2,title:"Best Friend Quotes & Captions 2025",cat:"Quotes",url:"https://captionmood.com/best-friend-quotes",clicks:9200,date:"2025-04-27"},
-    {id:3,title:"Funny Captions for Selfies — 150+ Ideas",cat:"Humor",url:"https://captionmood.com/funny-selfie-captions",clicks:7400,date:"2025-04-26"},
-    {id:4,title:"Romantic Love Captions for Couples",cat:"Love",url:"https://captionmood.com/love-captions",clicks:6810,date:"2025-04-25"},
-    {id:5,title:"Motivational Monday Captions 2025",cat:"Motivation",url:"https://captionmood.com/monday-motivation",clicks:5300,date:"2025-04-24"},
-    {id:6,title:"Short Instagram Captions — 100+ Ideas",cat:"Captions",url:"https://captionmood.com/short-captions",clicks:4900,date:"2025-04-23"},
-    {id:7,title:"Attitude Captions for Boys 2025",cat:"Captions",url:"https://captionmood.com/attitude-captions-boys",clicks:4200,date:"2025-04-22"},
-    {id:8,title:"Deep Quotes About Life & Meaning",cat:"Quotes",url:"https://captionmood.com/deep-life-quotes",clicks:3800,date:"2025-04-21"},
-    {id:9,title:"Summer Captions for Instagram",cat:"Captions",url:"https://captionmood.com/summer-captions",clicks:3500,date:"2025-04-20"},
-    {id:10,title:"Cute Couple Captions & Quotes",cat:"Love",url:"https://captionmood.com/couple-captions",clicks:3200,date:"2025-04-19"},
-    {id:11,title:"Boss Attitude Quotes for Instagram",cat:"Quotes",url:"https://captionmood.com/boss-attitude-quotes",clicks:2900,date:"2025-04-18"},
-    {id:12,title:"Gym & Fitness Motivation Captions",cat:"Motivation",url:"https://captionmood.com/gym-captions",clicks:2600,date:"2025-04-17"},
-    {id:13,title:"Sad Captions for Instagram 2025",cat:"Captions",url:"https://captionmood.com/sad-captions",clicks:2400,date:"2025-04-16"},
-    {id:14,title:"Anniversary Captions for Couples",cat:"Love",url:"https://captionmood.com/anniversary-captions",clicks:2200,date:"2025-04-15"},
-    {id:15,title:"Funny Quotes About Mondays",cat:"Humor",url:"https://captionmood.com/monday-funny-quotes",clicks:2100,date:"2025-04-14"},
-    {id:16,title:"Travel Captions for Instagram 2025",cat:"Captions",url:"https://captionmood.com/travel-captions",clicks:1900,date:"2025-04-13"},
-    {id:17,title:"Night Out Captions for Girls",cat:"Captions",url:"https://captionmood.com/night-out-captions",clicks:1700,date:"2025-04-12"},
-    {id:18,title:"Empowering Women Quotes 2025",cat:"Quotes",url:"https://captionmood.com/women-empowerment-quotes",clicks:1600,date:"2025-04-11"},
-  ],
-  payments: [
-    {user:"Ayesha Khan",amount:21.39,rpm:5.08,views:4210,method:"JazzCash",date:"Apr 28",status:"paid"},
-    {user:"Bilal Ahmed",amount:44.81,rpm:5.08,views:8820,method:"JazzCash",date:"Apr 28",status:"paid"},
-    {user:"Usman Malik",amount:32.97,rpm:5.08,views:6490,method:"Bank Transfer",date:"Apr 29",status:"pending"},
-    {user:"Sara Iqbal",amount:10.67,rpm:5.08,views:2100,method:"Easypaisa",date:"Apr 27",status:"held"},
-  ],
-  categories: ["Captions","Quotes","Love","Humor","Motivation","Birthday"],
-  analyticsCategories: [
-    {cat:"Captions",articles:124,pinClicks:42100,pageviews:38400,revenue:195.07},
-    {cat:"Quotes",articles:98,pinClicks:30200,pageviews:27800,revenue:141.22},
-    {cat:"Love",articles:76,pinClicks:22400,pageviews:20100,revenue:102.11},
-    {cat:"Humor",articles:54,pinClicks:18900,pageviews:17200,revenue:87.38},
-    {cat:"Motivation",articles:42,pinClicks:7720,pageviews:7100,revenue:36.07},
-    {cat:"Birthday",articles:28,pinClicks:5900,pageviews:5400,revenue:27.43},
-  ],
-};
+// =============================================
+// SUPABASE
+// =============================================
+const SB_URL = 'https://ndfrgfgardykifkmbynx.supabase.co';
+const SB_KEY = 'sb_publishable_N38KXQmvKGfQzUQWr22qeg_8BwpC85V';
+const {createClient} = supabase;
+const sb = createClient(SB_URL, SB_KEY);
 
-let currentUser = null;
-let userArticleFilter = 'all';
-let userArticleSearch = '';
-let allUsers = [...DB.users];
+// STATE
+let CU = null; // current user
+let AUC = []; // all users cache
+let AAC = []; // all articles cache
+let RPM = 5.08;
+let MINP = 10;
+let UCF = 'all'; // user cat filter
+let UAS = ''; // user article search
 
-// ============================================================
+// =============================================
 // UTILS
-// ============================================================
-function toast(msg, type='success'){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.borderColor = type==='error' ? 'rgba(230,0,35,.3)' : 'rgba(34,197,94,.3)';
-  t.style.color = type==='error' ? 'var(--red)' : 'var(--green)';
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+// =============================================
+function toast(msg, type='ok'){
+  const t=document.getElementById('toast');
+  t.className=type==='err'?'err show':'show';
+  t.style.borderColor=type==='err'?'rgba(230,0,35,.3)':'rgba(34,197,94,.3)';
+  t.style.color=type==='err'?'var(--red)':'var(--green)';
+  t.textContent=msg;
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
-
-function fmt$(n){return '$'+parseFloat(n).toFixed(2);}
-function fmtN(n){return parseInt(n).toLocaleString();}
-
-function buildChart(el, values, cls){
-  const max = Math.max(...values);
-  el.innerHTML = values.map(v=>{
-    const h = max>0 ? Math.round((v/max)*100) : 5;
-    return `<div class="bar ${cls}" style="height:${Math.max(h,5)}%" title="${v}"></div>`;
-  }).join('');
+const f$=n=>'$'+parseFloat(n||0).toFixed(2);
+const fN=n=>parseInt(n||0).toLocaleString();
+function chart(el,vals,cls){
+  const mx=Math.max(...vals,1);
+  el.innerHTML=vals.map(v=>`<div class="bar ${cls}" style="height:${Math.max(Math.round((v/mx)*100),4)}%"></div>`).join('');
 }
-
-function statusBadge(s){
-  const map={active:'bg-green',suspended:'bg-red',pending:'bg-gold',paid:'bg-green',held:'bg-red'};
-  return `<span class="badge ${map[s]||'bg-gray'}">${s.toUpperCase()}</span>`;
+function catBadge(c){
+  const m={'Social Media Captions':'bg-b','Food & Recipes Ideas':'bg-o','Travel Ideas':'bg-g','Pick Up Lines':'bg-r','Beauty':'bg-b','Tech':'bg-b','Home Decor':'bg-o','Events':'bg-g','Celebrity':'bg-r','Recipes':'bg-o','Drinks':'bg-b','Desserts':'bg-o','Breakfast':'bg-g','Captions':'bg-b','Healthy Food':'bg-g'};
+  return m[c]||'bg-x';
 }
+function rbadge(r){return {Admin:'bg-r',Editor:'bg-o',Moderator:'bg-b',User:'bg-b'}[r]||'bg-x';}
+function sbadge(s){const m={active:'bg-g',suspended:'bg-r',pending:'bg-o',paid:'bg-g',held:'bg-r'};return `<span class="badge ${m[s]||'bg-x'}">${(s||'').toUpperCase()}</span>`;}
 
-// ============================================================
-// LOGIN / AUTH
-// ============================================================
-function doLogin(){
-  const email = document.getElementById('l-email').value.trim().toLowerCase();
-  const pass = document.getElementById('l-pass').value;
-  const user = DB.users.find(u=>u.email.toLowerCase()===email && u.pass===pass);
-  if(!user){
-    document.getElementById('login-err').classList.add('show');
-    return;
-  }
-  if(user.status==='suspended'){
-    document.getElementById('login-err').textContent='Your account is suspended. Contact admin.';
-    document.getElementById('login-err').classList.add('show');
-    return;
-  }
-  currentUser = user;
-  document.getElementById('login-screen').style.display='none';
-  initDashboard();
+// =============================================
+// LOGIN
+// =============================================
+async function doLogin(){
+  const email=document.getElementById('li-email').value.trim().toLowerCase();
+  const pass=document.getElementById('li-pass').value;
+  const btn=document.getElementById('li-btn');
+  const err=document.getElementById('le');
+  err.classList.remove('show');
+  if(!email||!pass){err.textContent='Email aur password daalo.';err.classList.add('show');return;}
+  btn.disabled=true;btn.textContent='Signing in...';
+  try{
+    const {data,error}=await sb.from('users').select('*').eq('email',email).single();
+    if(error||!data) throw new Error('User nahi mila. Email check karo.');
+    if(data.password_hash!==pass) throw new Error('Password galat hai.');
+    if(data.status==='suspended') throw new Error('Account suspended. Admin se rabta karo.');
+    CU=data;
+    document.getElementById('ls').style.display='none';
+    initApp();
+  }catch(e){
+    err.textContent=e.message;
+    err.classList.add('show');
+  }finally{btn.disabled=false;btn.textContent='Sign In';}
 }
 
 function doLogout(){
-  currentUser=null;
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('login-err').classList.remove('show');
-  document.getElementById('l-email').value='';
-  document.getElementById('l-pass').value='';
+  CU=null;
+  document.getElementById('ls').style.display='flex';
+  document.getElementById('le').classList.remove('show');
+  document.getElementById('li-email').value='';
+  document.getElementById('li-pass').value='';
 }
 
-// ============================================================
-// INIT DASHBOARD
-// ============================================================
-function initDashboard(){
-  const isAdmin = currentUser.role==='Admin' || currentUser.role==='Moderator' || currentUser.role==='Editor';
-
-  // Update sidebar user info
-  const initials = currentUser.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('sb-avatar').textContent=initials;
-  document.getElementById('top-avatar').textContent=initials;
-  document.getElementById('sb-name').textContent=currentUser.name;
-  document.getElementById('sb-role').textContent=currentUser.role.toUpperCase();
-
-  // Build nav
+// =============================================
+// INIT
+// =============================================
+async function initApp(){
+  const isAdmin=['Admin','Moderator','Editor'].includes(CU.role);
+  const ini=CU.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sb-av').textContent=ini;
+  document.getElementById('top-av').textContent=ini;
+  document.getElementById('sb-nm').textContent=CU.name;
+  document.getElementById('sb-rl').textContent=CU.role.toUpperCase();
+  await loadSettings();
   buildNav(isAdmin);
-
-  // Render first panel
-  if(isAdmin){
-    showPanel('admin-overview');
-  } else {
-    showPanel('user-articles');
-  }
+  showPanel(isAdmin?'admin-overview':'user-articles');
 }
 
-function buildNav(isAdmin){
-  const nav = document.getElementById('nav');
-  let html = '';
-  if(isAdmin){
-    html += `<div class="nav-section">Admin Panel</div>`;
-    html += navItem('admin-overview','◈','Overview');
-    html += navItem('admin-users','◎','Users','<span class="nav-count">'+allUsers.length+'</span>');
-    html += navItem('admin-payments','◇','Payments');
-    html += navItem('admin-analytics','▣','Analytics');
-    html += navItem('admin-articles','⟳','Article Sync');
-    html += `<div class="nav-section" style="margin-top:6px;">User View</div>`;
-  } else {
-    html += `<div class="nav-section">My Dashboard</div>`;
-  }
-  html += navItem('user-articles','◉','Article Links');
-  html += navItem('user-earnings','◆','My Earnings');
-  html += navItem('user-reports','◈','My Reports');
-  nav.innerHTML = html;
-  nav.querySelectorAll('.nav-item').forEach(el=>{
-    el.addEventListener('click',()=>showPanel(el.dataset.panel));
+async function loadSettings(){
+  const {data}=await sb.from('settings').select('*');
+  if(data) data.forEach(s=>{
+    if(s.key==='rpm') RPM=parseFloat(s.value)||5.08;
+    if(s.key==='min_payout') MINP=parseFloat(s.value)||10;
   });
 }
 
-function navItem(panel,icon,label,extra=''){
-  return `<div class="nav-item" data-panel="${panel}"><span class="nav-icon">${icon}</span>${label}${extra}</div>`;
+// =============================================
+// NAV
+// =============================================
+const TITLES={
+  'admin-overview':'Admin Overview','admin-users':'User Management',
+  'admin-payments':'Payments & Earnings','admin-analytics':'Analytics',
+  'admin-articles':'Article Sync','user-articles':'Article Links — captionmood.com',
+  'user-earnings':'My Earnings','user-reports':'My Reports'
+};
+
+function buildNav(isAdmin){
+  const nav=document.getElementById('nav');
+  let h='';
+  if(isAdmin){
+    h+='<div class="nav-section">Admin Panel</div>';
+    h+=ni('admin-overview','◈','Overview');
+    h+=ni('admin-users','◎','Users');
+    h+=ni('admin-payments','◇','Payments');
+    h+=ni('admin-analytics','▣','Analytics');
+    h+=ni('admin-articles','⟳','Article Sync');
+    h+='<div class="nav-section" style="margin-top:6px">User View</div>';
+  }else{
+    h+='<div class="nav-section">My Dashboard</div>';
+  }
+  h+=ni('user-articles','◉','Article Links');
+  h+=ni('user-earnings','◆','My Earnings');
+  h+=ni('user-reports','◈','My Reports');
+  nav.innerHTML=h;
+  nav.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>showPanel(el.dataset.p)));
 }
+const ni=(p,i,l)=>`<div class="nav-item" data-p="${p}"><span class="nav-icon">${i}</span>${l}</div>`;
 
 function showPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const p = document.getElementById('panel-'+id);
-  if(p) p.classList.add('active');
-  const n = document.querySelector(`[data-panel="${id}"]`);
-  if(n) n.classList.add('active');
-
-  const titles={
-    'admin-overview':'Admin Overview',
-    'admin-users':'User Management',
-    'admin-payments':'Payments & Earnings',
-    'admin-analytics':'Analytics — captionmood.com',
-    'admin-articles':'Article Sync — WordPress REST API',
-    'user-articles':'Article Links — captionmood.com',
-    'user-earnings':'My Earnings',
-    'user-reports':'My Reports',
+  const p=document.getElementById('p-'+id);if(p)p.classList.add('active');
+  const n=document.querySelector(`[data-p="${id}"]`);if(n)n.classList.add('active');
+  document.getElementById('ptitle').textContent=TITLES[id]||id;
+  const fns={
+    'admin-overview':rOV,'admin-users':rUsers,'admin-payments':rPay,
+    'admin-analytics':rAn,'admin-articles':rAdminArt,
+    'user-articles':rUArt,'user-earnings':rUEarn,'user-reports':rURep
   };
-  document.getElementById('page-title').textContent = titles[id]||id;
-
-  // Render panel data
-  if(id==='admin-overview') renderAdminOverview();
-  if(id==='admin-users') renderUsers();
-  if(id==='admin-payments') renderPayments();
-  if(id==='admin-analytics') renderAnalytics();
-  if(id==='admin-articles') renderWPArticles();
-  if(id==='user-articles') renderUserArticles();
-  if(id==='user-earnings') renderUserEarnings();
-  if(id==='user-reports') renderUserReports();
+  if(fns[id])fns[id]();
 }
 
-// ============================================================
+// =============================================
 // ADMIN: OVERVIEW
-// ============================================================
-function renderAdminOverview(){
-  // Charts
-  buildChart(document.getElementById('chart-pin'),[8200,11400,9800,15200,13100,18400,19810],'bar-pin');
-  buildChart(document.getElementById('chart-rev'),[41.7,57.9,49.8,77.2,66.6,93.5,100.6],'bar-gold');
-  buildChart(document.getElementById('chart-monthly-rev'),[2100,2650,3100,2840,3700,4812],'bar-gold');
-
-  // Top articles
-  const tbody = document.getElementById('ov-articles-table');
-  tbody.innerHTML = DB.articles.slice(0,6).map(a=>{
-    const earned = ((a.clicks/1000)*DB.rpm).toFixed(2);
-    const catBadge = catColor(a.cat);
-    return `<tr>
-      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</td>
-      <td><span class="badge ${catBadge}">${a.cat}</span></td>
-      <td>${fmtN(a.clicks)}</td>
-      <td>${fmt$(DB.rpm)}</td>
-      <td style="color:var(--green);">${fmt$(earned)}</td>
-      <td><span class="badge bg-green">LIVE</span></td>
-    </tr>`;
-  }).join('');
-
-  // Traffic sources
-  document.getElementById('ov-traffic-sources').innerHTML = [
-    {label:'Pinterest',val:78,cls:'var(--pin)'},
-    {label:'Google',val:14,cls:'var(--blue)'},
-    {label:'Direct',val:8,cls:'var(--muted)'},
-  ].map(s=>`<div class="prog-wrap">
-    <div class="prog-row"><span>${s.label}</span><span style="color:${s.cls};">${s.val}%</span></div>
-    <div class="prog-bar"><div class="prog-fill" style="width:${s.val}%;background:${s.cls};"></div></div>
-  </div>`).join('');
-
-  // Payout summary
-  document.getElementById('ov-payout-summary').innerHTML = [
-    {label:'Pending Payouts',val:'$1,240',color:'var(--gold)'},
-    {label:'Paid This Month',val:'$3,572',color:'var(--green)'},
-    {label:'Active Users',val:'1,284',color:'var(--text)'},
-    {label:'Avg RPM',val:fmt$(DB.rpm),color:'var(--gold)'},
-  ].map(r=>`<div class="rpm-row"><span class="rpm-label">${r.label}</span><span class="rpm-val" style="color:${r.color};">${r.val}</span></div>`).join('');
-
-  document.getElementById('ov-article-count').textContent = DB.articles.length;
-  document.getElementById('ov-sync-time').textContent = 'Last synced: ' + new Date().toLocaleTimeString();
+// =============================================
+async function rOV(){
+  chart(document.getElementById('c-pin'),[8200,11400,9800,15200,13100,18400,19810],'bp');
+  chart(document.getElementById('c-rev'),[41.7,57.9,49.8,77.2,66.6,93.5,100.6],'bg');
+  document.getElementById('ov-rpm').textContent=f$(RPM);
+  const {count:uc}=await sb.from('users').select('*',{count:'exact',head:true});
+  document.getElementById('ov-u').textContent=fN(uc||0);
+  document.getElementById('ov-u2').textContent=fN(uc||0);
+  const {data:arts}=await sb.from('articles').select('*').order('clicks',{ascending:false}).limit(8);
+  const tb=document.getElementById('ov-at');
+  if(arts&&arts.length){
+    tb.innerHTML=arts.map(a=>{
+      const e=((a.clicks/1000)*RPM).toFixed(2);
+      return `<tr><td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</td><td><span class="badge ${catBadge(a.category)}">${a.category}</span></td><td>${fN(a.clicks)}</td><td>${f$(RPM)}</td><td style="color:var(--green)">${f$(e)}</td><td><span class="badge bg-g">LIVE</span></td></tr>`;
+    }).join('');
+  }else{
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Koi article nahi. Article Sync mein jao.</td></tr>';
+  }
+  const {count:ac}=await sb.from('articles').select('*',{count:'exact',head:true});
+  document.getElementById('ov-ac').textContent=ac||0;
+  document.getElementById('ov-st').textContent='Last checked: '+new Date().toLocaleTimeString();
 }
 
-// ============================================================
+// =============================================
 // ADMIN: USERS
-// ============================================================
-function renderUsers(){
-  renderUsersTable(allUsers);
-  document.getElementById('u-total').textContent = allUsers.length;
+// =============================================
+async function rUsers(){
+  const {data,error}=await sb.from('users').select('*').order('created_at',{ascending:false});
+  if(error){toast('Error: '+error.message,'err');return;}
+  AUC=data||[];
+  renderUT(AUC);
+  document.getElementById('u-tot').textContent=AUC.length;
+  document.getElementById('u-act').textContent=AUC.filter(u=>u.status==='active').length;
+  document.getElementById('u-sus').textContent=AUC.filter(u=>u.status==='suspended').length;
 }
 
-function renderUsersTable(users){
-  const tbody = document.getElementById('users-table-body');
-  tbody.innerHTML = users.map((u,i)=>`<tr>
+function renderUT(users){
+  const tb=document.getElementById('u-tb');
+  if(!users.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Koi user nahi</td></tr>';return;}
+  tb.innerHTML=users.map(u=>`<tr>
     <td><strong>${u.name}</strong></td>
-    <td style="color:var(--muted);">${u.email}</td>
-    <td><span class="badge ${roleBadge(u.role)}">${u.role}</span></td>
-    <td><span style="font-size:10px;">${u.cat}</span></td>
-    <td>${fmtN(u.clicks)}</td>
-    <td style="color:var(--green);">${fmt$(u.earned)}</td>
-    <td>${statusBadge(u.status)}</td>
-    <td>
-      <button class="btn-action" onclick="editUser(${u.id})">Edit</button>
-      ${u.status==='active'
-        ? `<button class="btn-danger btn-sm" onclick="toggleUser(${u.id})">Suspend</button>`
-        : `<button class="btn-action" style="border-color:rgba(34,197,94,.3);color:var(--green);" onclick="toggleUser(${u.id})">Restore</button>`}
-    </td>
-  </tr>`).join('');
+    <td style="color:var(--muted);font-size:11px">${u.email}</td>
+    <td><span class="badge ${rbadge(u.role)}">${u.role}</span></td>
+    <td style="font-size:11px">${u.category_access||'All'}</td>
+    <td>${fN(u.total_clicks)}</td>
+    <td style="color:var(--green)">${f$(u.total_earned)}</td>
+    <td style="font-size:11px">${u.payment_method||'—'}</td>
+    <td>${sbadge(u.status)}</td>
+    <td>${u.status==='active'
+      ?`<button class="bd" onclick="toggleU('${u.id}','suspended')">Suspend</button>`
+      :`<button class="ba" style="border-color:rgba(34,197,94,.3);color:var(--green)" onclick="toggleU('${u.id}','active')">Restore</button>`}
+    </td></tr>`).join('');
 }
 
-function roleBadge(r){
-  return {Admin:'bg-red',Editor:'bg-gold',Moderator:'bg-blue',User:'bg-blue'}[r]||'bg-gray';
+async function addUser(){
+  const n=document.getElementById('nu-n').value.trim();
+  const e=document.getElementById('nu-e').value.trim().toLowerCase();
+  const p=document.getElementById('nu-p').value.trim();
+  const r=document.getElementById('nu-r').value;
+  const c=document.getElementById('nu-c').value;
+  const pm=document.getElementById('nu-pm').value;
+  const pa=document.getElementById('nu-pa').value.trim();
+  const msg=document.getElementById('add-u-msg');
+  msg.style.color='var(--muted)';msg.textContent='';
+  if(!n||!e||!p){msg.style.color='var(--red)';msg.textContent='Name, email aur password zaruri hain.';return;}
+  if(p.length<6){msg.style.color='var(--red)';msg.textContent='Password minimum 6 characters hona chahiye.';return;}
+  const btn=document.getElementById('add-u-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  const {error}=await sb.from('users').insert([{
+    name:n,email:e,password_hash:p,role:r,
+    category_access:c,payment_method:pm,payment_account:pa,
+    status:'active',total_clicks:0,total_earned:0
+  }]);
+  btn.disabled=false;btn.textContent='Add User to Supabase';
+  if(error){
+    msg.style.color='var(--red)';
+    msg.textContent=error.code==='23505'?'Yeh email pehle se exist karta hai!':'Error: '+error.message;
+    return;
+  }
+  msg.style.color='var(--green)';
+  msg.textContent=`✓ "${n}" successfully add ho gaya! Ab yeh login kar sakta hai.`;
+  clearUser();
+  rUsers();
 }
 
-function catColor(c){
-  const m={Captions:'bg-blue',Quotes:'bg-blue',Love:'bg-red',Humor:'bg-gold',Motivation:'bg-green',Birthday:'bg-blue'};
-  return m[c]||'bg-gray';
+function clearUser(){
+  ['nu-n','nu-e','nu-p','nu-pa'].forEach(id=>document.getElementById(id).value='');
 }
 
-function addUser(){
-  const name=document.getElementById('nu-name').value.trim();
-  const email=document.getElementById('nu-email').value.trim();
-  const pass=document.getElementById('nu-pass').value.trim();
-  const role=document.getElementById('nu-role').value;
-  const cat=document.getElementById('nu-cat').value;
-  const pay=document.getElementById('nu-pay').value;
-  if(!name||!email||!pass){toast('Please fill all required fields.','error');return;}
-  if(allUsers.find(u=>u.email.toLowerCase()===email.toLowerCase())){toast('Email already exists.','error');return;}
-  const newUser={id:Date.now(),name,email,pass,role,cat,pay,clicks:0,earned:0,status:'active'};
-  allUsers.push(newUser);
-  DB.users.push(newUser);
-  renderUsersTable(allUsers);
-  document.getElementById('u-total').textContent=allUsers.length;
-  clearAddUser();
-  toast(`User "${name}" added successfully!`);
+async function toggleU(id,status){
+  const {error}=await sb.from('users').update({status}).eq('id',id);
+  if(error){toast('Error: '+error.message,'err');return;}
+  toast(`User ${status==='active'?'restore':'suspend'} ho gaya`);
+  rUsers();
 }
 
-function clearAddUser(){
-  ['nu-name','nu-email','nu-pass'].forEach(id=>document.getElementById(id).value='');
+function searchU(q){
+  const f=q?AUC.filter(u=>u.name.toLowerCase().includes(q.toLowerCase())||u.email.toLowerCase().includes(q.toLowerCase())):AUC;
+  renderUT(f);
 }
 
-function toggleUser(id){
-  const u=allUsers.find(x=>x.id===id);
-  if(!u)return;
-  u.status=u.status==='active'?'suspended':'active';
-  renderUsersTable(allUsers);
-  toast(`User "${u.name}" ${u.status==='active'?'restored':'suspended'}.`);
-}
-
-function editUser(id){
-  const u=allUsers.find(x=>x.id===id);
-  if(!u)return;
-  toast(`Edit: ${u.name} — Full edit form coming in next version.`);
-}
-
-function searchUsers(q){
-  const filtered=q?allUsers.filter(u=>u.name.toLowerCase().includes(q.toLowerCase())||u.email.toLowerCase().includes(q.toLowerCase())):allUsers;
-  renderUsersTable(filtered);
-}
-
-// ============================================================
+// =============================================
 // ADMIN: PAYMENTS
-// ============================================================
-function renderPayments(){
-  buildChart(document.getElementById('chart-monthly-rev'),[2100,2650,3100,2840,3700,4812],'bar-gold');
-  const tbody=document.getElementById('payments-table');
-  tbody.innerHTML=DB.payments.map(p=>`<tr>
-    <td>${p.user}</td>
-    <td style="color:var(--green);">${fmt$(p.amount)}</td>
-    <td>${fmt$(p.rpm)}</td>
-    <td>${fmtN(p.views)}</td>
-    <td>${p.method}</td>
-    <td style="color:var(--muted);">${p.date}</td>
-    <td>${statusBadge(p.status)}</td>
-    <td>${p.status==='pending'?`<button class="btn-primary btn-sm" onclick="approvePay('${p.user}')">Approve</button>`:'—'}</td>
+// =============================================
+async function rPay(){
+  document.getElementById('pay-rpm').textContent=f$(RPM);
+  document.getElementById('pay-min').textContent=f$(MINP);
+  document.getElementById('rpm-v').value=RPM;
+  document.getElementById('minp-v').value=MINP;
+  chart(document.getElementById('c-mon'),[2100,2650,3100,2840,3700,4812],'bg');
+  const {data}=await sb.from('payments').select('*').order('created_at',{ascending:false});
+  const tb=document.getElementById('pay-tb');
+  if(!data||!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Koi payment nahi abhi tak</td></tr>';return;}
+  tb.innerHTML=data.map(p=>`<tr>
+    <td>${p.user_id||'—'}</td>
+    <td style="color:var(--green)">${f$(p.amount)}</td>
+    <td>${f$(p.rpm)}</td><td>${fN(p.views)}</td>
+    <td>${p.method||'—'}</td>
+    <td style="color:var(--muted);font-size:11px">${new Date(p.created_at).toLocaleDateString()}</td>
+    <td>${sbadge(p.status||'pending')}</td>
+    <td>${p.status==='pending'?`<button class="bp2 bsm" onclick="approvePay('${p.id}')">Approve</button>`:'—'}</td>
   </tr>`).join('');
 }
 
-function saveRPM(){
-  DB.rpm=parseFloat(document.getElementById('rpm-val').value)||5.08;
-  toast(`RPM updated to ${fmt$(DB.rpm)}`);
+async function saveRPM(){
+  const rpm=parseFloat(document.getElementById('rpm-v').value)||5.08;
+  const min=parseFloat(document.getElementById('minp-v').value)||10;
+  await sb.from('settings').upsert([{key:'rpm',value:String(rpm)},{key:'min_payout',value:String(min)}]);
+  RPM=rpm;MINP=min;
+  document.getElementById('pay-rpm').textContent=f$(rpm);
+  document.getElementById('pay-min').textContent=f$(min);
+  toast('RPM settings save ho gayi!');
 }
 
-function approvePay(name){
-  const p=DB.payments.find(x=>x.user===name);
-  if(p){p.status='paid'; renderPayments(); toast(`Payment for ${name} approved!`);}
+async function approvePay(id){
+  await sb.from('payments').update({status:'paid'}).eq('id',id);
+  toast('Payment approved!');rPay();
 }
 
-// ============================================================
+// =============================================
 // ADMIN: ANALYTICS
-// ============================================================
-function renderAnalytics(){
-  const tbody=document.getElementById('analytics-cat-table');
-  const total=DB.analyticsCategories.reduce((s,c)=>s+c.revenue,0);
-  tbody.innerHTML=DB.analyticsCategories.map(c=>`<tr>
-    <td><span class="badge ${catColor(c.cat)}">${c.cat}</span></td>
-    <td>${c.articles}</td>
-    <td>${fmtN(c.pinClicks)}</td>
-    <td>${fmtN(c.pageviews)}</td>
-    <td style="color:var(--green);">${fmt$(c.revenue)}</td>
-    <td>${fmt$(DB.rpm)}</td>
-    <td>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="prog-bar" style="width:80px;"><div class="prog-fill" style="width:${Math.round((c.revenue/total)*100)}%;background:var(--gold);"></div></div>
-        <span style="font-size:10px;color:var(--muted);">${Math.round((c.revenue/total)*100)}%</span>
-      </div>
-    </td>
-  </tr>`).join('');
-}
-
-function saveGA4(){
-  const id=document.getElementById('ga4-id').value.trim();
-  if(!id){toast('Please enter GA4 Measurement ID','error');return;}
-  document.getElementById('ga4-status').innerHTML=`<span style="color:var(--green);">✓ GA4 ID "${id}" saved. Add this ID to your captionmood.com WordPress site via Site Kit plugin.</span>`;
-  toast('GA4 configuration saved!');
-}
-
-function testGA4(){
-  document.getElementById('ga4-status').innerHTML=`<span style="color:var(--gold);">Testing connection... (In production, this will ping GA4 Measurement Protocol API)</span>`;
-  setTimeout(()=>{
-    document.getElementById('ga4-status').innerHTML=`<span style="color:var(--green);">✓ Connection test passed. Real data requires GA4 API credentials from Google Cloud Console.</span>`;
-  },1500);
-}
-
-// ============================================================
-// ADMIN: WP ARTICLE SYNC
-// ============================================================
-let wpArticles = [...DB.articles];
-
-function renderWPArticles(){
-  document.getElementById('wp-article-count').textContent = `(${wpArticles.length} articles)`;
-  renderWPArticleList(wpArticles);
-}
-
-function renderWPArticleList(articles){
-  const el=document.getElementById('wp-articles-list');
-  if(!articles.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:12px 0;">No articles found.</div>';return;}
-  el.innerHTML=`<table>
-    <thead><tr><th>Title</th><th>Category</th><th>URL</th><th>Date</th><th>Clicks</th></tr></thead>
-    <tbody>${articles.map(a=>`<tr>
-      <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</td>
-      <td><span class="badge ${catColor(a.cat)}">${a.cat}</span></td>
-      <td><a href="${a.url}" style="color:var(--blue);font-size:10px;" target="_blank">View</a></td>
-      <td style="color:var(--muted);font-size:11px;">${a.date}</td>
-      <td>${fmtN(a.clicks)}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-function fetchWPArticles(){
-  const url=document.getElementById('wp-url').value.trim()||'https://captionmood.com';
-  const statusEl=document.getElementById('wp-sync-status');
-  document.getElementById('wp-articles-list').innerHTML='<div class="loader"><div class="spinner"></div>Fetching from '+url+'/wp-json/wp/v2/posts...</div>';
-  statusEl.innerHTML=`<span style="color:var(--gold);">Connecting to WordPress REST API: ${url}/wp-json/wp/v2/posts?per_page=100</span>`;
-
-  // Simulate real WP API call (replace with real fetch in production)
-  setTimeout(()=>{
-    // In production: fetch(`${url}/wp-json/wp/v2/posts?per_page=100`)
-    //   .then(r=>r.json()).then(posts=>{ ... map posts to articles ... })
-    const now = new Date().toISOString().split('T')[0];
-    const newArticle = {
-      id: Date.now(),
-      title: "New Auto-Synced: Latest Captions 2025 — "+new Date().toLocaleTimeString(),
-      cat: "Captions",
-      url: url+"/new-captions-"+Date.now(),
-      clicks: 0,
-      date: now
-    };
-    wpArticles.unshift(newArticle);
-    DB.articles.unshift(newArticle);
-    document.getElementById('wp-article-count').textContent=`(${wpArticles.length} articles)`;
-    renderWPArticleList(wpArticles);
-    statusEl.innerHTML=`<span style="color:var(--green);">✓ Sync complete — ${wpArticles.length} articles loaded. Last sync: ${new Date().toLocaleTimeString()}</span>`;
-    toast('Articles synced from captionmood.com!');
-  }, 1800);
-}
-
-function searchWPArticles(q){
-  const filtered=q?wpArticles.filter(a=>a.title.toLowerCase().includes(q.toLowerCase())||a.cat.toLowerCase().includes(q.toLowerCase())):wpArticles;
-  renderWPArticleList(filtered);
-}
-
-// ============================================================
-// USER: ARTICLE LINKS
-// ============================================================
-function renderUserArticles(){
-  // Build category chips
-  const cats=['all',...DB.categories];
-  document.getElementById('user-cat-filter').innerHTML=cats.map(c=>`
-    <div class="cat-chip ${c===userArticleFilter?'active':''}" data-cat="${c}" onclick="setUserCat('${c}')">${c==='all'?'All Categories':c}</div>
-  `).join('');
-  renderUserArticlesList();
-}
-
-function setUserCat(cat){
-  userArticleFilter=cat;
-  renderUserArticles();
-}
-
-function filterUserArticles(q){
-  userArticleSearch=q;
-  renderUserArticlesList();
-}
-
-function renderUserArticlesList(){
-  let arts = DB.articles;
-  if(userArticleFilter!=='all') arts=arts.filter(a=>a.cat===userArticleFilter);
-  if(userArticleSearch) arts=arts.filter(a=>a.title.toLowerCase().includes(userArticleSearch.toLowerCase()));
-
-  document.getElementById('articles-count-label').textContent=`${arts.length} article${arts.length!==1?'s':''}${userArticleFilter!=='all'?' in '+userArticleFilter:''}`;
-
-  const el=document.getElementById('user-articles-list');
-  if(!arts.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px 0;">No articles found for this filter.</div>';return;}
-
-  el.innerHTML=arts.map((a,i)=>`<div class="article-row">
-    <span class="article-title" title="${a.url}">${a.title}</span>
-    <span class="cat-tag">${a.cat}</span>
-    <button class="copy-btn" id="ubtn-${i}" onclick="copyUserLink('${a.url}',${i},'${a.title}')">Copy Link</button>
-  </div>`).join('');
-}
-
-function copyUserLink(url,i,title){
-  try{ navigator.clipboard.writeText(url); }catch(e){}
-  const btn=document.getElementById('ubtn-'+i);
-  if(btn){btn.textContent='Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy Link';btn.classList.remove('copied');},1800);}
-  toast('Link copied: '+title.slice(0,40)+'...');
-}
-
-// ============================================================
-// USER: EARNINGS
-// ============================================================
-function renderUserEarnings(){
-  const u=currentUser;
-  document.getElementById('ue-total').textContent=fmt$(u.earned||0);
-  document.getElementById('ue-month').textContent=fmt$((u.earned||0)*0.4);
-  document.getElementById('ue-rpm').textContent=fmt$(DB.rpm);
-  document.getElementById('ue-pending').textContent=fmt$(Math.max(0,(u.earned||0)-10));
-
-  // Earnings table (sample based on user clicks)
-  const days=[
-    {date:'Apr 29',title:'Birthday Captions 2025',clicks:820},
-    {date:'Apr 28',title:'Best Friend Quotes',clicks:640},
-    {date:'Apr 27',title:'Funny Selfie Captions',clicks:480},
-    {date:'Apr 26',title:'Love Captions',clicks:710},
-    {date:'Apr 25',title:'Motivational Captions',clicks:560},
-  ];
-  document.getElementById('user-earnings-table').innerHTML=days.map(d=>{
-    const earned=((d.clicks/1000)*DB.rpm).toFixed(2);
-    return `<tr><td style="color:var(--muted);">${d.date}</td><td>${d.title}</td><td>${fmtN(d.clicks)}</td><td>${fmt$(DB.rpm)}</td><td style="color:var(--green);">${fmt$(earned)}</td></tr>`;
-  }).join('');
-}
-
-function calcEarnings(){
-  const clicks=parseFloat(document.getElementById('calc-clicks').value)||0;
-  const earned=((clicks/1000)*DB.rpm).toFixed(2);
-  document.getElementById('calc-result').textContent=fmt$(earned);
-}
-
-// ============================================================
-// USER: REPORTS
-// ============================================================
-function renderUserReports(){
-  const u=currentUser;
-  document.getElementById('ur-clicks').textContent=fmtN(u.clicks||0);
-  document.getElementById('ur-articles').textContent='18';
-  document.getElementById('ur-best').textContent=fmt$(((u.clicks||0)/7/1000*DB.rpm*1.4).toFixed(2));
-
-  buildChart(document.getElementById('user-chart'),[420,610,750,550,880,950,700],'bar-pin');
-
-  document.getElementById('user-top-articles').innerHTML=DB.articles.slice(0,5).map(a=>{
-    const myClicks=Math.round(a.clicks*0.033);
-    const earned=((myClicks/1000)*DB.rpm).toFixed(2);
+// =============================================
+async function rAn(){
+  const {data:arts}=await sb.from('articles').select('category');
+  const cats={};
+  if(arts)arts.forEach(a=>{cats[a.category]=(cats[a.category]||0)+1;});
+  const total=Object.values(cats).reduce((s,v)=>s+v,0)||1;
+  document.getElementById('an-tb').innerHTML=Object.entries(cats).map(([cat,cnt])=>{
+    const rev=((cnt*500/1000)*RPM).toFixed(2);
+    const pct=Math.round((cnt/total)*100);
     return `<tr>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</td>
-      <td><span class="badge ${catColor(a.cat)}">${a.cat}</span></td>
-      <td>${fmtN(myClicks)}</td>
-      <td style="color:var(--green);">${fmt$(earned)}</td>
+      <td><span class="badge ${catBadge(cat)}">${cat}</span></td>
+      <td>${cnt}</td><td>${fN(cnt*500)}</td>
+      <td style="color:var(--green)">${f$(rev)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="pb" style="width:70px"><div class="pf" style="width:${pct}%;background:var(--gold)"></div></div><span style="font-size:10px;color:var(--muted)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
 }
 
-// ============================================================
-// AUTO-SYNC SIMULATION (every 5 min in real production)
-// ============================================================
-setInterval(()=>{
-  document.getElementById('ov-sync-time') && (document.getElementById('ov-sync-time').textContent='Last synced: '+new Date().toLocaleTimeString());
-}, 30000);
+async function saveGA4(){
+  const id=document.getElementById('ga4-id').value.trim();
+  if(!id){toast('GA4 ID daalo','err');return;}
+  await sb.from('settings').upsert([{key:'ga4_id',value:id}]);
+  document.getElementById('ga4-st').innerHTML=`<span style="color:var(--green)">✓ GA4 ID "${id}" saved. WordPress par Site Kit plugin install karo.</span>`;
+  toast('GA4 saved!');
+}
+function testGA4(){document.getElementById('ga4-st').innerHTML='<span style="color:var(--green)">✓ Supabase OK. Real GA4 data ke liye Google Cloud API chahiye.</span>';}
+
+// =============================================
+// ADMIN: ARTICLE SYNC
+// =============================================
+async function rAdminArt(){
+  const {data}=await sb.from('articles').select('*').order('synced_at',{ascending:false});
+  AAC=data||[];
+  document.getElementById('art-cnt').textContent=`(${AAC.length} articles)`;
+  showArtList(AAC);
+}
+
+function showArtList(arts){
+  const el=document.getElementById('art-list');
+  if(!arts.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:12px 0">Koi article nahi. Sync Now dabao.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Title</th><th>Category</th><th>URL</th><th>Clicks</th><th>Synced</th></tr></thead><tbody>${
+    arts.map(a=>`<tr>
+      <td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</td>
+      <td><span class="badge ${catBadge(a.category)}">${a.category}</span></td>
+      <td><a href="${a.url}" target="_blank" style="color:var(--blue);font-size:10px">View ↗</a></td>
+      <td>${fN(a.clicks)}</td>
+      <td style="color:var(--muted);font-size:11px">${new Date(a.synced_at).toLocaleDateString()}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+async function syncArticles(){
+  const url=document.getElementById('wp-url').value.trim()||'https://captionmood.com';
+  const pp=document.getElementById('wp-pp').value||100;
+  const btn=document.getElementById('sync-btn');
+  const st=document.getElementById('sync-st');
+  btn.disabled=true;btn.textContent='Syncing...';
+  st.innerHTML=`<span style="color:var(--gold)">Fetching: ${url}/wp-json/wp/v2/posts?per_page=${pp}...</span>`;
+  document.getElementById('art-list').innerHTML='<div class="ld"><div class="sp"></div>Fetching from captionmood.com...</div>';
+  try{
+    const res=await fetch(`${url}/wp-json/wp/v2/posts?per_page=${pp}&_fields=id,title,link,categories,date&status=publish`);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const posts=await res.json();
+    if(!posts.length) throw new Error('Koi post nahi mili');
+    // Fetch categories bhi
+    const catRes=await fetch(`${url}/wp-json/wp/v2/categories?per_page=100`);
+    const catData=await catRes.json();
+    const catMap={};
+    if(Array.isArray(catData)) catData.forEach(c=>{catMap[c.id]=c.name;});
+    const articles=posts.map(p=>({
+      wp_id:p.id,
+      title:(p.title?.rendered||'Untitled').replace(/<[^>]+>/g,''),
+      url:p.link,
+      category:p.categories&&p.categories.length?catMap[p.categories[0]]||'General':'General',
+      clicks:0,
+      synced_at:new Date().toISOString()
+    }));
+    const {error}=await sb.from('articles').upsert(articles,{onConflict:'wp_id'});
+    if(error) throw new Error(error.message);
+    st.innerHTML=`<span style="color:var(--green)">✓ ${posts.length} articles synced! ${new Date().toLocaleTimeString()}</span>`;
+    toast(`${posts.length} articles synced!`);
+    rAdminArt();
+  }catch(e){
+    st.innerHTML=`<span style="color:var(--gold)">⚠ ${e.message}. CORS issue — captionmood.com/?sg_sync=run123 URL browser mein kholo (logged in ho kar).</span>`;
+    rAdminArt();
+  }finally{btn.disabled=false;btn.textContent='Sync Now from captionmood.com';}
+}
+
+function searchArt(q){
+  const f=q?AAC.filter(a=>a.title.toLowerCase().includes(q.toLowerCase())):AAC;
+  showArtList(f);
+}
+
+// =============================================
+// USER: ARTICLE LINKS
+// =============================================
+async function rUArt(){
+  const {data}=await sb.from('articles').select('*').order('clicks',{ascending:false});
+  AAC=data||[];
+  // Real categories from DB
+  const cats=['all',...new Set(AAC.map(a=>a.category).filter(Boolean).sort())];
+  document.getElementById('u-cats').innerHTML=cats.map(c=>
+    `<div class="cc ${c===UCF?'active':''}" data-c="${c}" onclick="setCat('${c}')">${c==='all'?'All Categories':c}</div>`
+  ).join('');
+  renderArtList();
+}
+
+function setCat(c){
+  UCF=c;
+  document.querySelectorAll('#u-cats .cc').forEach(el=>el.classList.toggle('active',el.dataset.c===c));
+  renderArtList();
+}
+function filterArt(q){UAS=q;renderArtList();}
+
+function renderArtList(){
+  let arts=AAC;
+  if(UCF!=='all') arts=arts.filter(a=>a.category===UCF);
+  if(UAS) arts=arts.filter(a=>a.title.toLowerCase().includes(UAS.toLowerCase()));
+  document.getElementById('u-art-cnt').textContent=`${arts.length} article${arts.length!==1?'s':''}`;
+  const el=document.getElementById('u-art-list');
+  if(!arts.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px 0">Koi article nahi mila.</div>';return;}
+  el.innerHTML=arts.map((a,i)=>`<div class="ar">
+    <span class="at">${a.title}</span>
+    <span class="act">${a.category}</span>
+    <button class="cb2" id="cb${i}" onclick="copyL('${a.url.replace(/'/g,"\\'")}',${i},'${(a.title||'').replace(/'/g,'').slice(0,35)}')">Copy Link</button>
+  </div>`).join('');
+}
+
+function copyL(url,i,title){
+  try{navigator.clipboard.writeText(url);}catch(e){}
+  const btn=document.getElementById('cb'+i);
+  if(btn){btn.textContent='Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy Link';btn.classList.remove('copied');},1800);}
+  toast('Link copied: '+title+'...');
+}
+
+// =============================================
+// USER: EARNINGS
+// =============================================
+async function rUEarn(){
+  // Refresh user data from DB
+  const {data}=await sb.from('users').select('*').eq('id',CU.id).single();
+  if(data) CU=data;
+  document.getElementById('ue-tot').textContent=f$(CU.total_earned||0);
+  document.getElementById('ue-mon').textContent=f$((CU.total_earned||0)*0.4);
+  document.getElementById('ue-rpm').textContent=f$(RPM);
+  document.getElementById('ue-pend').textContent=f$(Math.max(0,(CU.total_earned||0)-MINP));
+  document.getElementById('ue-minp').textContent=f$(MINP);
+  document.getElementById('ue-pm').textContent=CU.payment_method||'Set nahi hua';
+  document.getElementById('ue-pa').textContent=CU.payment_account||'—';
+  const {data:pays}=await sb.from('payments').select('*').eq('user_id',CU.id).order('created_at',{ascending:false}).limit(10);
+  const tb=document.getElementById('ue-tb');
+  if(!pays||!pays.length){
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Abhi koi earning nahi. Articles share karo Pinterest par!</td></tr>';
+    return;
+  }
+  tb.innerHTML=pays.map(p=>`<tr>
+    <td style="color:var(--muted)">${new Date(p.created_at).toLocaleDateString()}</td>
+    <td>—</td><td>${fN(p.views)}</td><td>${f$(p.rpm)}</td>
+    <td style="color:var(--green)">${f$(p.amount)}</td>
+  </tr>`).join('');
+}
+function calcE(){
+  const c=parseFloat(document.getElementById('calc-c').value)||0;
+  document.getElementById('calc-r').textContent=f$((c/1000)*RPM);
+}
+
+// =============================================
+// USER: REPORTS
+// =============================================
+async function rURep(){
+  const {data}=await sb.from('users').select('*').eq('id',CU.id).single();
+  if(data) CU=data;
+  document.getElementById('ur-cl').textContent=fN(CU.total_clicks||0);
+  document.getElementById('ur-ea').textContent=f$(CU.total_earned||0);
+  chart(document.getElementById('u-chart'),[420,610,750,550,880,950,700],'bp');
+  const {data:arts}=await sb.from('articles').select('*').order('clicks',{ascending:false}).limit(5);
+  document.getElementById('ur-ar').textContent=arts?.length||0;
+  const tb=document.getElementById('ur-tb');
+  if(!arts||!arts.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Koi data nahi</td></tr>';return;}
+  const ms=0.033;
+  tb.innerHTML=arts.map(a=>{
+    const mc=Math.round(a.clicks*ms);
+    return `<tr>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</td>
+      <td><span class="badge ${catBadge(a.category)}">${a.category}</span></td>
+      <td>${fN(mc)}</td>
+      <td style="color:var(--green)">${f$((mc/1000)*RPM)}</td>
+    </tr>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
